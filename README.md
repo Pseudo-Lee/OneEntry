@@ -1,6 +1,4 @@
 # OneEntry
-Event-driven middleware that syncs online store sales into accounting automatically, with signature verification, idempotent processing, retries and a dead-letter queue.
-# OneEntry
 
 Event-driven middleware that syncs online store sales into an accounting system automatically, with signature verification, idempotent processing, retries and a dead-letter queue.
 
@@ -48,31 +46,31 @@ flowchart LR
 
 ### What would change at 100x volume
 
-- Replace the in-process queue with a managed broker (for example Azure Service Bus)
+- Shard the queue (for example per customer) and use FIFO queues only where ordering matters
 - Run multiple workers and partition by customer or sale ID to preserve ordering where it matters
-- Move the event store to a database with proper indexing and retention rules
+- Add RDS Proxy for connection pooling, a read replica for the dashboard, and an archive policy for old events
 - Add rate limiting and back-pressure towards the accounting API
 
 ## Tech stack
 
-- C# / .NET (ASP.NET Core)
-- PostgreSQL
-- Queue: AmazonSQS
-- React dashboard (optional)
-- GitHub Actions for CI/CD, deployed to Azure
+- C# / .NET on AWS Lambda
+- Amazon API Gateway, Amazon SQS (with a dead-letter queue) and Amazon RDS for PostgreSQL
+- Amazon CloudWatch and AWS X-Ray for logs and tracing
+- Dashboard (optional)
+- GitHub Actions for CI/CD, deployed to AWS
 
 ## Getting started
 
 ### Prerequisites
 
-- .NET SDK 11.0.100
-- PostgreSQL 18
+- .NET SDK [version]
+- An AWS account and the AWS CLI [version]
 
 ### Setup
 
 ```bash
-git clone https://github.com/Pseudo-Lee/OneEntry.git
-cd OneEntry
+git clone https://github.com/Pseudo-Lee/[repo-name].git
+cd [repo-name]
 cp .env.example .env
 ```
 
@@ -81,14 +79,15 @@ Fill in the values in `.env`:
 | Variable | Description |
 | --- | --- |
 | `WEBHOOK_SECRET` | Shared secret used to verify incoming webhook signatures |
-| `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_URL` | PostgreSQL connection string, or the Secrets Manager secret that holds it |
+| `QUEUE_URL` | URL of the SQS queue the receiver sends to |
 | `ACCOUNTING_API_URL` | Base URL of the accounting API (the bundled mock by default) |
 
 ### Run
 
 ```bash
 dotnet restore
-dotnet run --project src/[ApiProject]
+[build and deploy commands for your infrastructure tool]
 ```
 
 ### Simulate a sale
